@@ -1,0 +1,16 @@
+[Unit]
+Description=OLED Brightness Control via DPCD AUX
+Documentation=https://github.com/NVIDIA/open-gpu-kernel-modules
+After=nvidia-persistenced.service display-manager.service
+Requires=nvidia-persistenced.service
+ConditionPathExists=/sys/class/backlight/nvidia_0/brightness
+ConditionPathExists=/dev/nvidiactl
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nv-bright-wrapper
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
