@@ -72,8 +72,11 @@ static int rm_ctrl(uint32_t o, int32_t c, void *p, uint32_t s) {
 }
 
 static int dpcd_read(uint32_t did, uint32_t addr, uint8_t *buf, uint32_t sz) {
-    AUXCH a = {0}; a.displayId = did; a.cmd = 0x09; a.addr = addr; a.size = sz > 16 ? 16 : sz;
+    if (sz == 0 || sz > 16) return -EINVAL;
+    /* NVIDIA input length is count - 1; the returned length is a byte count. */
+    AUXCH a = {0}; a.displayId = did; a.cmd = 0x09; a.addr = addr; a.size = sz - 1;
     int r = rm_ctrl(DISPLAY_HANDLE, CMD_DP_AUXCH_CTRL, &a, sizeof(a));
+    if (!r && (a.replyType != 0 || a.size != sz)) r = -EIO;
     if (r) {
         if (!quiet) fprintf(stderr, "  DPCD read 0x%04x failed: 0x%x\n", addr, r);
         return r;
@@ -88,9 +91,12 @@ static int dpcd_read(uint32_t did, uint32_t addr, uint8_t *buf, uint32_t sz) {
 }
 
 static int dpcd_write(uint32_t did, uint32_t addr, const uint8_t *buf, uint32_t sz) {
-    AUXCH a = {0}; a.displayId = did; a.cmd = 0x08; a.addr = addr; a.size = sz > 16 ? 16 : sz;
-    memcpy(a.data, buf, a.size);
-    return rm_ctrl(DISPLAY_HANDLE, CMD_DP_AUXCH_CTRL, &a, sizeof(a));
+    if (sz == 0 || sz > 16) return -EINVAL;
+    AUXCH a = {0}; a.displayId = did; a.cmd = 0x08; a.addr = addr; a.size = sz - 1;
+    memcpy(a.data, buf, sz);
+    int r = rm_ctrl(DISPLAY_HANDLE, CMD_DP_AUXCH_CTRL, &a, sizeof(a));
+    if (!r && (a.replyType != 0 || a.size != sz)) return -EIO;
+    return r;
 }
 
 static int init_rm(void) {
@@ -132,8 +138,26 @@ static uint32_t find_edp(void) {
 }
 
 static int set_luminance(uint32_t edp, uint32_t mcd) {
+    /* IAX11 trial limit: 400 nits, below the specified 500-nit SDR typical. */
+    if (mcd == 0 || mcd > 400000) return -ERANGE;
+    uint8_t cap = 0, mode = 0;
+    if (dpcd_read(edp, 0x703, &cap, 1) || dpcd_read(edp, 0x721, &mode, 1))
+        return -EIO;
+    if (!(cap & 0x10) || (mode & 3) != 2) return -ENOTSUP;
     uint8_t b[3] = { mcd & 0xFF, (mcd >> 8) & 0xFF, (mcd >> 16) & 0xFF };
-    return dpcd_write(edp, 0x734, b, 3);
+    int r = dpcd_write(edp, 0x734, b, 3);
+    if (r) return r;
+    /* Preserve frequency and other mode bits while enabling absolute luminance. */
+    if (!(mode & 0x80)) {
+        mode |= 0x80;
+        r = dpcd_write(edp, 0x721, &mode, 1);
+        if (r) return r;
+    }
+    uint8_t actual[3] = {0}, actual_mode = 0;
+    if (dpcd_read(edp, 0x734, actual, 3) ||
+        dpcd_read(edp, 0x721, &actual_mode, 1) ||
+        memcmp(actual, b, 3) || actual_mode != mode) return -EIO;
+    return 0;
 }
 
 static uint32_t get_luminance(uint32_t edp) {
@@ -154,12 +178,23 @@ int main(int argc, char **argv)
     if (quiet) {
         /* watch mode — minimal output */
         const char *sysfs = "/sys/class/backlight/nvidia_0/brightness";
-        /* Default to Samsung ATNA60HU02-0: SDR 5-500 cd/m², register in milli-cd/m² */
-        double LUM_MIN = 5000.0, LUM_MAX = 500000.0;
+        /* IAX11 initial range: 5-400 cd/m², register in milli-cd/m². */
+        double LUM_MIN = 5000.0, LUM_MAX = 400000.0;
 
-        if (argc >= 4) {
-            LUM_MIN = strtod(argv[2], NULL) * 1000.0;
-            LUM_MAX = strtod(argv[3], NULL) * 1000.0;
+        if (argc != 2 && argc != 4) {
+            fprintf(stderr, "Usage: nv-bright watch [min_nits max_nits]\n");
+            return 1;
+        }
+        if (argc == 4) {
+            char *min_end, *max_end;
+            LUM_MIN = strtod(argv[2], &min_end) * 1000.0;
+            LUM_MAX = strtod(argv[3], &max_end) * 1000.0;
+            if (min_end == argv[2] || max_end == argv[3] || *min_end || *max_end ||
+                !isfinite(LUM_MIN) || !isfinite(LUM_MAX) ||
+                LUM_MIN < 1000 || LUM_MIN >= LUM_MAX || LUM_MAX > 400000) {
+                fprintf(stderr, "Require 1 <= min_nits < max_nits <= 400\n");
+                return 1;
+            }
         }
 
         int sysfs_fd = open(sysfs, O_RDONLY);
@@ -208,9 +243,8 @@ int main(int argc, char **argv)
     }
 
     /* Interactive mode — verbose output */
-    uint8_t cap[4], ctl[4];
-    dpcd_read(edp, 0x700, cap, 4);
-    dpcd_read(edp, 0x720, ctl, 4);
+    uint8_t cap[4] = {0}, ctl[4] = {0};
+    if (dpcd_read(edp, 0x700, cap, 4) || dpcd_read(edp, 0x720, ctl, 4)) return 1;
 
     uint16_t cur_bright = (ctl[2] << 8) | ctl[3];
     int bklght_en = ctl[0] & 1;
@@ -234,10 +268,21 @@ int main(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "lum") == 0 && argc >= 3) {
-        uint32_t val = strtoul(argv[2], NULL, 0);
+        char *end;
+        errno = 0;
+        unsigned long parsed = strtoul(argv[2], &end, 0);
+        if (errno || end == argv[2] || *end || parsed == 0 || parsed > 400000) {
+            fprintf(stderr, "Require a luminance value from 1 to 400000 mcd/m²\n");
+            return 1;
+        }
+        uint32_t val = (uint32_t)parsed;
         printf("Setting TARGET_LUMINANCE to %d mcd/m² (%d.%03d cd/m²)...\n",
                val, val / 1000, val % 1000);
-        set_luminance(edp, val);
+        int r = set_luminance(edp, val);
+        if (r) {
+            fprintf(stderr, "Setting luminance failed: %d\n", r);
+            return 1;
+        }
         uint32_t rb = get_luminance(edp);
         printf("Readback: %d mcd/m²\n", rb);
     } else if (strcmp(argv[1], "read") == 0 && argc >= 3) {
@@ -250,13 +295,16 @@ int main(int argc, char **argv)
         uint32_t addr = strtoul(argv[2], NULL, 16);
         uint32_t count = argc - 3;
         uint8_t vals[16];
+        if (count > sizeof(vals)) {
+            fprintf(stderr, "raw accepts at most 16 bytes\n");
+            return 1;
+        }
         for (uint32_t i = 0; i < count && i < 16; i++)
             vals[i] = strtoul(argv[3 + i], NULL, 16);
         printf("Writing %d bytes to DPCD 0x%04x:", count, addr);
         for (uint32_t i = 0; i < count; i++) printf(" %02x", vals[i]);
         printf("\n");
-        dpcd_write(edp, addr, vals, count);
-        dpcd_read(edp, addr, NULL, count);
+        if (dpcd_write(edp, addr, vals, count) || dpcd_read(edp, addr, NULL, count)) return 1;
     } else if (strcmp(argv[1], "dump") == 0) {
         printf("\neDP Caps (0x700-0x71F):\n");
         for (uint32_t a = 0x700; a < 0x720; a += 4)

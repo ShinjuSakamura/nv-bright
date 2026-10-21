@@ -8,7 +8,7 @@ ConditionPathExists=/dev/nvidiactl
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/nv-bright-wrapper
+ExecStart=/home/shinjusakamura/nv-bright/nv-bright-wrapper
 Restart=on-failure
 RestartSec=5
 

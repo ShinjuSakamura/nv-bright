@@ -1,0 +1,303 @@
+diff --git a/README.md b/README.md
+index 3f3c6a6..c891748 100644
+--- a/README.md
++++ b/README.md
+@@ -1,60 +1,67 @@
+-# nv-bright
++# nv-bright：Legion Y7000X IAX11
+ 
+-`nv-bright` is a small user-space daemon I put together to workaround broken OLED brightness controls on my laptop when running in NVIDIA dGPU mode. 
++项目目录：`~/nv-bright`。
+ 
+-**Note: This was created specifically for, and only tested on, a Lenovo Legion Pro 7 (83RU) with an RTX 5080 and a Samsung OLED panel (`ATNA60HU02-0`). I cannot guarantee it will work on anything else, though it might be helpful for people facing similar issues on other modern OLED laptops.**
++基于 [msteele/nv-bright](https://github.com/msteele/nv-bright) 的本机适配版，上游基线为 `c1263e9fbaffd738a100e2b3c5823c7c50c6fbaa`。使用原项目的 NVIDIA RM/AUX 接口，控制 EDO EF25QBA63.E OLED 面板的绝对亮度。
+ 
+-## The Problem (As I Understand It)
+-On my laptop, the brightness controls work perfectly when using the integrated graphics, but fail completely when switched to the discrete NVIDIA GPU.
++本机已验证：独显模式下设置 250 尼特，屏幕明显变亮；30 秒测试结束后，原模式与原目标值成功恢复并读回核对。系统亮度键与滑块调节已获用户确认。服务已启用并运行；实际重启和休眠恢复效果待验证。
+ 
+-Even after applying an ACPI DSDT/SSDT override to force the BIOS to tell the NVIDIA driver to use the DPCD backlight interface (which successfully creates the `/sys/class/backlight/nvidia_0` file), moving the GNOME brightness slider does nothing to the actual screen.
++## 运行
+ 
+-With some help from AI, we investigated and found that the NVIDIA driver (or its internal firmware) seems to be failing to actually send the required DisplayPort AUX commands to the panel when the slider is moved.
++当前由系统服务在后台运行，使用系统滑块或亮度键调节。需要前台运行时，在本机终端手动执行：
+ 
+-## The Workaround
+-`nv-bright` acts as a middleman. It watches the standard Linux `nvidia_0` backlight sysfs file for changes. When you move your brightness slider, `nv-bright` reads the requested percentage and uses the NVIDIA RM API (`CMD_DP_AUXCH_CTRL`) to manually write the raw byte values directly to the DPCD `PANEL_TARGET_LUMINANCE` registers (`0x734` - `0x736`).
++```bash
++cd ~/nv-bright
++sudo systemctl stop nv-bright.service
++sudo ./nv-bright-wrapper
++```
+ 
+-By bypassing the NVIDIA driver's internal backlight logic and talking directly to the hardware over the I2C/AUX bus, this tool successfully dims the screen.
++程序持续读取 `/sys/class/backlight/nvidia_0/brightness`，将亮度滑块映射到 5–250 尼特。启动脚本按自身位置查找同目录的可执行程序。前台运行时保持终端开启，Ctrl+C 停止程序；随后执行 `sudo systemctl start nv-bright.service` 恢复后台控制。
+ 
+-## Dynamic EDID Parsing
+-The `nv-bright-wrapper` script uses `edid-decode` to read your OLED panel's raw EDID, attempts to find its true maximum luminance (in nits), and dynamically scales the brightness curve to match it. If it fails, it defaults to a safe 500 nits.
++手动查看面板状态或单次设置亮度时，先停止后台服务，操作结束后恢复：
+ 
+-## Installation
++```bash
++sudo systemctl stop nv-bright.service
++sudo ./nv-bright
++sudo ./nv-bright lum 250000
++sudo systemctl start nv-bright.service
++```
+ 
+-### Prerequisites
+-*   `gcc` and `make`
+-*   `edid-decode` (used by the wrapper to automatically determine your screen's max nits)
++`lum` 参数单位为毫尼特；250000 对应 250 尼特。程序接受的单次设置上限为 400000，启动脚本采用已实测的 250 尼特上限。
++
++## 开机自启
++
++服务已安装并启用，随附的 `nv-bright.service` 使用本机项目路径。需要重新安装服务时，由用户在本机终端手动执行：
+ 
+-### Build and Install
+ ```bash
+-make
+-sudo make install
++sudo install -m 644 ~/nv-bright/nv-bright.service /etc/systemd/system/nv-bright.service
++sudo systemctl daemon-reload
++sudo systemctl enable --now nv-bright.service
+ ```
+ 
+-### Enable the Daemon
++启用服务前，用 Ctrl+C 结束前台的 nv-bright，保持单个控制进程。启用后可关闭终端。
++
++状态与日志：
++
+ ```bash
+-sudo systemctl enable --now nv-bright.service
++systemctl status nv-bright.service --no-pager
++journalctl -u nv-bright.service -b --no-pager
+ ```
+ 
+-## Manual Usage
+-You can also run `nv-bright` manually to inspect your display's DPCD capabilities or force a specific luminance for testing.
++停止并取消自启：
+ 
+ ```bash
+-# Show current display state and capabilities
+-sudo nv-bright
++sudo systemctl disable --now nv-bright.service
++```
+ 
+-# Watch the sysfs file and apply changes automatically (min nits, max nits)
+-sudo nv-bright watch 5 500
++## 编译与验证资料
+ 
+-# Set a specific absolute luminance (in milli-cd/m²)
+-sudo nv-bright lum 250000
++使用已有的 GCC 和 make 编译：
+ 
+-# Dump all eDP DPCD registers
+-sudo nv-bright dump
++```bash
++make
+ ```
+ 
+-## Note for Fedora / RPM Users
+-An RPM spec file (`nv-bright.spec`) is included. You can build a native package using `rpmbuild -ba nv-bright.spec`.
++`iax11.patch` 包含相对上游的当前修改；Git 历史保留在 `.git/`。`verification/` 保存实机日志、只读面板探测和模拟检查记录。`sha256sum -c SHA256SUMS` 可核对交付文件。
+ 
+-## Disclaimer
+-This tool interacts directly with your graphics card's low-level RM API. Use this entirely at your own risk. It is intended as a temporary band-aid until the underlying bugs are resolved.
++适配内容包括 NVIDIA AUX 长度编码、绝对亮度模式启用及读回检查、亮度范围和参数校验。适配状态见 `verification/适配判定.md`；亮度模式的实机定位结果见 `verification/亮度模式定位.md`。
+diff --git a/nv-bright-wrapper b/nv-bright-wrapper
+old mode 100644
+new mode 100755
+index ee91126..fdd9454
+--- a/nv-bright-wrapper
++++ b/nv-bright-wrapper
+@@ -1,25 +1,12 @@
+ #!/bin/bash
+-# Wrapper for nv-bright to dynamically discover max luminance from the EDID
++set -euo pipefail
+ 
+-# Find the eDP connector's EDID file
+-EDP_EDID=$(find /sys/class/drm/ -name "*-eDP-*" -path "*/edid" | head -n 1)
+-
+-MAX_NITS=500 # Default safe fallback
+-
+-if [ -n "$EDP_EDID" ] && command -v edid-decode >/dev/null 2>&1; then
+-    # Try to extract "Desired content max luminance" from the HDR Static Metadata block
+-    # edid-decode output format: "Desired content max luminance: 143 (1107.128 cd/m^2)"
+-    EXTRACTED_NITS=$(edid-decode "$EDP_EDID" 2>/dev/null | grep -oP '(?<=Desired content max luminance: \d{1,4} \()\d+(?=\.\d+ cd/m\^2\))' | head -n 1)
+-    
+-    if [ -n "$EXTRACTED_NITS" ] && [ "$EXTRACTED_NITS" -gt 0 ]; then
+-        MAX_NITS=$EXTRACTED_NITS
+-    fi
+-fi
+-
+-# The min luminance is usually functionally 0 for OLEDs, but we'll use 5 to prevent it turning completely off by accident
++SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
++# IAX11 range verified by the 250 cd/m² hardware trial.
+ MIN_NITS=5
++MAX_NITS=250
+ 
+-echo "Starting nv-bright watch mode with dynamic limits: $MIN_NITS to $MAX_NITS cd/m²"
++echo "Starting nv-bright watch mode: $MIN_NITS to $MAX_NITS cd/m²"
+ 
+ # Exec replaces the bash process with the nv-bright daemon, so systemd tracks it properly
+-exec /usr/bin/nv-bright watch "$MIN_NITS" "$MAX_NITS"
++exec "$SCRIPT_DIR/nv-bright" watch "$MIN_NITS" "$MAX_NITS"
+diff --git a/nv-bright.c b/nv-bright.c
+index 8e1c472..c2806b1 100644
+--- a/nv-bright.c
++++ b/nv-bright.c
+@@ -72,8 +72,11 @@ static int rm_ctrl(uint32_t o, int32_t c, void *p, uint32_t s) {
+ }
+ 
+ static int dpcd_read(uint32_t did, uint32_t addr, uint8_t *buf, uint32_t sz) {
+-    AUXCH a = {0}; a.displayId = did; a.cmd = 0x09; a.addr = addr; a.size = sz > 16 ? 16 : sz;
++    if (sz == 0 || sz > 16) return -EINVAL;
++    /* NVIDIA input length is count - 1; the returned length is a byte count. */
++    AUXCH a = {0}; a.displayId = did; a.cmd = 0x09; a.addr = addr; a.size = sz - 1;
+     int r = rm_ctrl(DISPLAY_HANDLE, CMD_DP_AUXCH_CTRL, &a, sizeof(a));
++    if (!r && (a.replyType != 0 || a.size != sz)) r = -EIO;
+     if (r) {
+         if (!quiet) fprintf(stderr, "  DPCD read 0x%04x failed: 0x%x\n", addr, r);
+         return r;
+@@ -88,9 +91,12 @@ static int dpcd_read(uint32_t did, uint32_t addr, uint8_t *buf, uint32_t sz) {
+ }
+ 
+ static int dpcd_write(uint32_t did, uint32_t addr, const uint8_t *buf, uint32_t sz) {
+-    AUXCH a = {0}; a.displayId = did; a.cmd = 0x08; a.addr = addr; a.size = sz > 16 ? 16 : sz;
+-    memcpy(a.data, buf, a.size);
+-    return rm_ctrl(DISPLAY_HANDLE, CMD_DP_AUXCH_CTRL, &a, sizeof(a));
++    if (sz == 0 || sz > 16) return -EINVAL;
++    AUXCH a = {0}; a.displayId = did; a.cmd = 0x08; a.addr = addr; a.size = sz - 1;
++    memcpy(a.data, buf, sz);
++    int r = rm_ctrl(DISPLAY_HANDLE, CMD_DP_AUXCH_CTRL, &a, sizeof(a));
++    if (!r && (a.replyType != 0 || a.size != sz)) return -EIO;
++    return r;
+ }
+ 
+ static int init_rm(void) {
+@@ -132,8 +138,26 @@ static uint32_t find_edp(void) {
+ }
+ 
+ static int set_luminance(uint32_t edp, uint32_t mcd) {
++    /* IAX11 trial limit: 400 nits, below the specified 500-nit SDR typical. */
++    if (mcd == 0 || mcd > 400000) return -ERANGE;
++    uint8_t cap = 0, mode = 0;
++    if (dpcd_read(edp, 0x703, &cap, 1) || dpcd_read(edp, 0x721, &mode, 1))
++        return -EIO;
++    if (!(cap & 0x10) || (mode & 3) != 2) return -ENOTSUP;
+     uint8_t b[3] = { mcd & 0xFF, (mcd >> 8) & 0xFF, (mcd >> 16) & 0xFF };
+-    return dpcd_write(edp, 0x734, b, 3);
++    int r = dpcd_write(edp, 0x734, b, 3);
++    if (r) return r;
++    /* Preserve frequency and other mode bits while enabling absolute luminance. */
++    if (!(mode & 0x80)) {
++        mode |= 0x80;
++        r = dpcd_write(edp, 0x721, &mode, 1);
++        if (r) return r;
++    }
++    uint8_t actual[3] = {0}, actual_mode = 0;
++    if (dpcd_read(edp, 0x734, actual, 3) ||
++        dpcd_read(edp, 0x721, &actual_mode, 1) ||
++        memcmp(actual, b, 3) || actual_mode != mode) return -EIO;
++    return 0;
+ }
+ 
+ static uint32_t get_luminance(uint32_t edp) {
+@@ -154,12 +178,23 @@ int main(int argc, char **argv)
+     if (quiet) {
+         /* watch mode — minimal output */
+         const char *sysfs = "/sys/class/backlight/nvidia_0/brightness";
+-        /* Default to Samsung ATNA60HU02-0: SDR 5-500 cd/m², register in milli-cd/m² */
+-        double LUM_MIN = 5000.0, LUM_MAX = 500000.0;
++        /* IAX11 initial range: 5-400 cd/m², register in milli-cd/m². */
++        double LUM_MIN = 5000.0, LUM_MAX = 400000.0;
+ 
+-        if (argc >= 4) {
+-            LUM_MIN = strtod(argv[2], NULL) * 1000.0;
+-            LUM_MAX = strtod(argv[3], NULL) * 1000.0;
++        if (argc != 2 && argc != 4) {
++            fprintf(stderr, "Usage: nv-bright watch [min_nits max_nits]\n");
++            return 1;
++        }
++        if (argc == 4) {
++            char *min_end, *max_end;
++            LUM_MIN = strtod(argv[2], &min_end) * 1000.0;
++            LUM_MAX = strtod(argv[3], &max_end) * 1000.0;
++            if (min_end == argv[2] || max_end == argv[3] || *min_end || *max_end ||
++                !isfinite(LUM_MIN) || !isfinite(LUM_MAX) ||
++                LUM_MIN < 1000 || LUM_MIN >= LUM_MAX || LUM_MAX > 400000) {
++                fprintf(stderr, "Require 1 <= min_nits < max_nits <= 400\n");
++                return 1;
++            }
+         }
+ 
+         int sysfs_fd = open(sysfs, O_RDONLY);
+@@ -208,9 +243,8 @@ int main(int argc, char **argv)
+     }
+ 
+     /* Interactive mode — verbose output */
+-    uint8_t cap[4], ctl[4];
+-    dpcd_read(edp, 0x700, cap, 4);
+-    dpcd_read(edp, 0x720, ctl, 4);
++    uint8_t cap[4] = {0}, ctl[4] = {0};
++    if (dpcd_read(edp, 0x700, cap, 4) || dpcd_read(edp, 0x720, ctl, 4)) return 1;
+ 
+     uint16_t cur_bright = (ctl[2] << 8) | ctl[3];
+     int bklght_en = ctl[0] & 1;
+@@ -234,10 +268,21 @@ int main(int argc, char **argv)
+     }
+ 
+     if (strcmp(argv[1], "lum") == 0 && argc >= 3) {
+-        uint32_t val = strtoul(argv[2], NULL, 0);
++        char *end;
++        errno = 0;
++        unsigned long parsed = strtoul(argv[2], &end, 0);
++        if (errno || end == argv[2] || *end || parsed == 0 || parsed > 400000) {
++            fprintf(stderr, "Require a luminance value from 1 to 400000 mcd/m²\n");
++            return 1;
++        }
++        uint32_t val = (uint32_t)parsed;
+         printf("Setting TARGET_LUMINANCE to %d mcd/m² (%d.%03d cd/m²)...\n",
+                val, val / 1000, val % 1000);
+-        set_luminance(edp, val);
++        int r = set_luminance(edp, val);
++        if (r) {
++            fprintf(stderr, "Setting luminance failed: %d\n", r);
++            return 1;
++        }
+         uint32_t rb = get_luminance(edp);
+         printf("Readback: %d mcd/m²\n", rb);
+     } else if (strcmp(argv[1], "read") == 0 && argc >= 3) {
+@@ -250,13 +295,16 @@ int main(int argc, char **argv)
+         uint32_t addr = strtoul(argv[2], NULL, 16);
+         uint32_t count = argc - 3;
+         uint8_t vals[16];
++        if (count > sizeof(vals)) {
++            fprintf(stderr, "raw accepts at most 16 bytes\n");
++            return 1;
++        }
+         for (uint32_t i = 0; i < count && i < 16; i++)
+             vals[i] = strtoul(argv[3 + i], NULL, 16);
+         printf("Writing %d bytes to DPCD 0x%04x:", count, addr);
+         for (uint32_t i = 0; i < count; i++) printf(" %02x", vals[i]);
+         printf("\n");
+-        dpcd_write(edp, addr, vals, count);
+-        dpcd_read(edp, addr, NULL, count);
++        if (dpcd_write(edp, addr, vals, count) || dpcd_read(edp, addr, NULL, count)) return 1;
+     } else if (strcmp(argv[1], "dump") == 0) {
+         printf("\neDP Caps (0x700-0x71F):\n");
+         for (uint32_t a = 0x700; a < 0x720; a += 4)
+diff --git a/nv-bright.service b/nv-bright.service
+index b21cedd..27f244b 100644
+--- a/nv-bright.service
++++ b/nv-bright.service
+@@ -8,7 +8,7 @@ ConditionPathExists=/dev/nvidiactl
+ 
+ [Service]
+ Type=simple
+-ExecStart=/usr/bin/nv-bright-wrapper
++ExecStart=/home/shinjusakamura/nv-bright/nv-bright-wrapper
+ Restart=on-failure
+ RestartSec=5
+ 

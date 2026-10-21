@@ -1,0 +1,44 @@
+[
+  {
+    "scenario": "normal",
+    "exit_code": 0,
+    "writes": [
+      "734: 90 d0 03",
+      "721: 8a",
+      "721: 0a",
+      "734: 80 1a 06"
+    ],
+    "registers_restored": true,
+    "passed": true
+  },
+  {
+    "scenario": "partial-write-failure",
+    "exit_code": 1,
+    "writes": [
+      "734: 90 d0 03",
+      "721: 0a",
+      "734: 80 1a 06"
+    ],
+    "registers_restored": true,
+    "passed": true
+  },
+  {
+    "scenario": "term",
+    "exit_code": 143,
+    "writes": [
+      "734: 90 d0 03",
+      "721: 8a",
+      "721: 0a",
+      "734: 80 1a 06"
+    ],
+    "registers_restored": true,
+    "passed": true
+  },
+  {
+    "scenario": "unexpected-mode",
+    "exit_code": 1,
+    "writes": [],
+    "registers_restored": true,
+    "passed": true
+  }
+]

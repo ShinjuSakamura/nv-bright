@@ -1,0 +1,169 @@
+{
+  "upstream": "https://github.com/msteele/nv-bright",
+  "base_commit": "c1263e9fbaffd738a100e2b3c5823c7c50c6fbaa",
+  "changed_files": [
+    "nv-bright.c",
+    "nv-bright-wrapper",
+    "nv-bright.service",
+    "README.md"
+  ],
+  "build": "GCC 15.2.0; -O2 -Wall -Wextra -Werror; stack and linker hardening",
+  "transport_simulation_cases": [
+    {
+      "scenario": "inspect",
+      "args": [],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "passed": true
+    },
+    {
+      "scenario": "lum250",
+      "args": [
+        "lum",
+        "250000"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "passed": true
+    },
+    {
+      "scenario": "lum400",
+      "args": [
+        "lum",
+        "400000"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "passed": true
+    },
+    {
+      "scenario": "unsupported",
+      "args": [
+        "lum",
+        "250000"
+      ],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "passed": true
+    },
+    {
+      "scenario": "over-limit",
+      "args": [
+        "lum",
+        "400001"
+      ],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "passed": true
+    },
+    {
+      "scenario": "invalid-number",
+      "args": [
+        "lum",
+        "250000junk"
+      ],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "passed": true
+    },
+    {
+      "scenario": "watch-over-limit",
+      "args": [
+        "watch",
+        "5",
+        "500"
+      ],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "passed": true
+    },
+    {
+      "scenario": "watch-nan",
+      "args": [
+        "watch",
+        "nan",
+        "400"
+      ],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "passed": true
+    },
+    {
+      "scenario": "short-read",
+      "args": [],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "passed": true
+    },
+    {
+      "scenario": "restore-mode",
+      "args": [
+        "raw",
+        "721",
+        "0a"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "passed": true
+    },
+    {
+      "scenario": "oversized-raw",
+      "args": [
+        "raw",
+        "721",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a",
+        "0a"
+      ],
+      "expected_exit": 1,
+      "actual_exit": 1,
+      "passed": true
+    }
+  ],
+  "hardware_write_tested": true,
+  "system_installed": true,
+  "hardware_trial": {
+    "result": "user_confirmed_screen_became_bright",
+    "target_millinit": 250000,
+    "mode_before": "0x0a",
+    "mode_during": "0x8a",
+    "target_readback_millinit": 250000,
+    "duration_seconds": 30,
+    "restored_and_verified": true,
+    "mode_restored": "0x0a",
+    "target_restored_millinit": 400000,
+    "log": "trial.log",
+    "watch_slider_tested": true,
+    "startup_and_resume_tested": false,
+    "wrapper_range_nits": [
+      5,
+      250
+    ],
+    "watch_slider_result": "user_confirmed_normal_control"
+  },
+  "project_directory": "~/nv-bright",
+  "system_service_unit": "/etc/systemd/system/nv-bright.service",
+  "system_service_enabled": true,
+  "system_service_active": true,
+  "relative_vs_absolute_hardware_test": {
+    "result": "relative mode dim, absolute mode normal",
+    "high_byte_shift_hypothesis_supported": false,
+    "restoration_verified": true,
+    "evidence": "relative-ab-result.json",
+    "exact_vendor_culprit_proven": false
+  }
+}

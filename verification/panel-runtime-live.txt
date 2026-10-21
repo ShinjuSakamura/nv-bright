@@ -1,0 +1,20 @@
+[1/3] Read-only NVIDIA RM/AUX inspection.
+Display: 0x200
+DPCD 0x0700 status=0x0: 05 9b a6 54
+DPCD 0x0720 status=0x0: 80 8a 00 ff 08 08 0c 00
+DPCD 0x0734 status=0x0: 90 d0 03
+[2/3] GET_BACKLIGHT_BRIGHTNESS in the three documented units.
+RM GET PERCENT100: status=0x1b, raw=0, uncalibrated=0, returned_type=1
+RM GET PERCENT1000: status=0x1b, raw=0, uncalibrated=0, returned_type=2
+RM GET NITS: status=0x1b, raw=0, uncalibrated=0, returned_type=3
+[3/3] Query the BIOS GETBACKLIGHT configuration used by NVIDIA initialization.
+ACPI GETBACKLIGHT: RM status=0x0, ACPI status=0x0, bytes=128
+  0000: 50 a4 00 80 03 02 00 00 00 00 00 00 00 00 00 00
+  0010: 05 00 00 00 01 00 00 00 e8 03 00 00 0a 00 00 00
+  0020: e8 03 00 00 0b 00 00 00 0a 00 00 00 64 00 00 00
+  0030: 96 00 00 00 c8 00 00 00 2c 01 00 00 90 01 00 00
+  0040: fe 01 00 00 76 02 00 00 f8 02 00 00 66 03 00 00
+  0050: e8 03 00 00 00 00 00 00 64 00 00 00 c8 00 00 00
+  0060: 2c 01 00 00 90 01 00 00 f4 01 00 00 58 02 00 00
+  0070: bc 02 00 00 20 03 00 00 84 03 00 00 e8 03 00 00
+Completed. Brightness SET and AUX WRITE commands were not issued.

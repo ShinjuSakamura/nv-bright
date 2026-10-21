@@ -1,0 +1,77 @@
+[1/4] 读取当前模式与目标亮度。
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 80 1a 06
+  TARGET_LUMINANCE: 400000 mcd/m² (400.000 cd/m²)
+
+Usage: nv-bright <watch [min_nits] [max_nits]|lum N|dump|read ADDR [N]|raw ADDR B1..>
+恢复记录：模式 0a，目标字节 80 1a 06。
+[2/4] 临时启用绝对亮度，设置为 250 尼特。
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 80 1a 06
+  TARGET_LUMINANCE: 400000 mcd/m² (400.000 cd/m²)
+Setting TARGET_LUMINANCE to 250000 mcd/m² (250.000 cd/m²)...
+  DPCD 0x0703: 54
+  DPCD 0x0721: 0a
+  DPCD 0x0734: 90 d0 03
+  DPCD 0x0721: 8a
+  DPCD 0x0734: 90 d0 03
+Readback: 250000 mcd/m²
+[3/4] 观察屏幕是否明显变亮；测试期间请保持亮度滑块不变。
+剩余 30 秒，结束后自动恢复；Ctrl+C 可提前恢复。
+剩余 25 秒，结束后自动恢复；Ctrl+C 可提前恢复。
+剩余 20 秒，结束后自动恢复；Ctrl+C 可提前恢复。
+剩余 15 秒，结束后自动恢复；Ctrl+C 可提前恢复。
+剩余 10 秒，结束后自动恢复；Ctrl+C 可提前恢复。
+剩余 5 秒，结束后自动恢复；Ctrl+C 可提前恢复。
+[4/4] 恢复测试前的模式与目标亮度。
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 8a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x8a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=1
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+Writing 1 bytes to DPCD 0x0721: 0a
+  DPCD 0x0721: 0a
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+Writing 3 bytes to DPCD 0x0734: 80 1a 06
+  DPCD 0x0734: 80 1a 06
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 80 1a 06
+  TARGET_LUMINANCE: 400000 mcd/m² (400.000 cd/m²)
+
+Usage: nv-bright <watch [min_nits] [max_nits]|lum N|dump|read ADDR [N]|raw ADDR B1..>
+恢复成功：模式和目标亮度已读回核对。

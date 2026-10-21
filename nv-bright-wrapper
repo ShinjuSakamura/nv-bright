@@ -1,25 +1,12 @@
 #!/bin/bash
-# Wrapper for nv-bright to dynamically discover max luminance from the EDID
+set -euo pipefail
 
-# Find the eDP connector's EDID file
-EDP_EDID=$(find /sys/class/drm/ -name "*-eDP-*" -path "*/edid" | head -n 1)
-
-MAX_NITS=500 # Default safe fallback
-
-if [ -n "$EDP_EDID" ] && command -v edid-decode >/dev/null 2>&1; then
-    # Try to extract "Desired content max luminance" from the HDR Static Metadata block
-    # edid-decode output format: "Desired content max luminance: 143 (1107.128 cd/m^2)"
-    EXTRACTED_NITS=$(edid-decode "$EDP_EDID" 2>/dev/null | grep -oP '(?<=Desired content max luminance: \d{1,4} \()\d+(?=\.\d+ cd/m\^2\))' | head -n 1)
-    
-    if [ -n "$EXTRACTED_NITS" ] && [ "$EXTRACTED_NITS" -gt 0 ]; then
-        MAX_NITS=$EXTRACTED_NITS
-    fi
-fi
-
-# The min luminance is usually functionally 0 for OLEDs, but we'll use 5 to prevent it turning completely off by accident
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# IAX11 range verified by the 250 cd/m² hardware trial.
 MIN_NITS=5
+MAX_NITS=250
 
-echo "Starting nv-bright watch mode with dynamic limits: $MIN_NITS to $MAX_NITS cd/m²"
+echo "Starting nv-bright watch mode: $MIN_NITS to $MAX_NITS cd/m²"
 
 # Exec replaces the bash process with the nv-bright daemon, so systemd tracks it properly
-exec /usr/bin/nv-bright watch "$MIN_NITS" "$MAX_NITS"
+exec "$SCRIPT_DIR/nv-bright" watch "$MIN_NITS" "$MAX_NITS"

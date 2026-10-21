@@ -1,0 +1,56 @@
+[
+  {
+    "scenario": "normal",
+    "exit_code": 0,
+    "writes": [
+      "721: 0a",
+      "722: 40",
+      "721: 8a",
+      "722: 00 ff"
+    ],
+    "registers_restored": true,
+    "service_restored": true,
+    "passed": true
+  },
+  {
+    "scenario": "partial-write-failure",
+    "exit_code": 1,
+    "writes": [
+      "721: 0a",
+      "722: 40",
+      "721: 8a",
+      "722: 00 ff"
+    ],
+    "registers_restored": true,
+    "service_restored": true,
+    "passed": true
+  },
+  {
+    "scenario": "term",
+    "exit_code": 143,
+    "writes": [
+      "721: 0a",
+      "721: 8a",
+      "722: 00 ff"
+    ],
+    "registers_restored": true,
+    "service_restored": true,
+    "passed": true
+  },
+  {
+    "scenario": "unexpected-mode",
+    "exit_code": 1,
+    "writes": [],
+    "registers_restored": true,
+    "service_restored": true,
+    "passed": true
+  },
+  {
+    "scenario": "stop-failure",
+    "exit_code": 1,
+    "writes": [],
+    "registers_restored": true,
+    "service_restored": true,
+    "passed": true
+  }
+]

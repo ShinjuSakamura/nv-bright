@@ -1,0 +1,128 @@
+[1/4] 临时停止亮度服务，防止它覆盖测试指令。
+[2/4] 保存并检查当前面板状态。
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 8a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x8a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=1
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+
+Usage: nv-bright <watch [min_nits] [max_nits]|lum N|dump|read ADDR [N]|raw ADDR B1..>
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 8a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x8a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=1
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+  DPCD 0x0724: 08
+[3/4] A/B对照：A为原来的相对亮度，B只改变相对亮度高字节。
+请比较B是否明显比A亮；Ctrl+C可提前恢复。
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 8a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x8a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=1
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+Writing 1 bytes to DPCD 0x0721: 0a
+  DPCD 0x0721: 0a
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+
+Usage: nv-bright <watch [min_nits] [max_nits]|lum N|dump|read ADDR [N]|raw ADDR B1..>
+A：原值0x00ff，剩余 5 秒。
+A：原值0x00ff，剩余 4 秒。
+A：原值0x00ff，剩余 3 秒。
+A：原值0x00ff，剩余 2 秒。
+A：原值0x00ff，剩余 1 秒。
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+Writing 1 bytes to DPCD 0x0722: 40
+  DPCD 0x0722: 40
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 40 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x40ff (16639)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+
+Usage: nv-bright <watch [min_nits] [max_nits]|lum N|dump|read ADDR [N]|raw ADDR B1..>
+B：对照值0x40ff，剩余 8 秒。
+B：对照值0x40ff，剩余 7 秒。
+B：对照值0x40ff，剩余 6 秒。
+B：对照值0x40ff，剩余 5 秒。
+B：对照值0x40ff，剩余 4 秒。
+B：对照值0x40ff，剩余 3 秒。
+B：对照值0x40ff，剩余 2 秒。
+B：对照值0x40ff，剩余 1 秒。
+[4/4] 恢复测试前的面板状态和亮度服务。
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 0a 40 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x0a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=0
+  Brightness: 0x40ff (16639)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+Writing 1 bytes to DPCD 0x0721: 8a
+  DPCD 0x0721: 8a
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 8a 40 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x8a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=1
+  Brightness: 0x40ff (16639)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+Writing 2 bytes to DPCD 0x0722: 00 ff
+  DPCD 0x0722: 00 ff
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0700: 05 9b a6 54
+  DPCD 0x0720: 80 8a 00 ff
+Display: 0x200  eDP rev: 1.5
+GENERAL_CAP1: 0x9b  BKLGHT_CAP: 0xa6
+DISPLAY_CTL: 0x80  BKLGHT_MODE: 0x8a
+  BKLGHT_EN=0  CTL_MODE=2  LUMINANCE=1
+  Brightness: 0x00ff (255)
+  DPCD 0x0734: 90 d0 03
+  TARGET_LUMINANCE: 250000 mcd/m² (250.000 cd/m²)
+
+Usage: nv-bright <watch [min_nits] [max_nits]|lum N|dump|read ADDR [N]|raw ADDR B1..>
+面板恢复成功，原值已读回核对。
+亮度服务已恢复运行。
+对照结束：请反馈B阶段是否比A阶段明显变亮。

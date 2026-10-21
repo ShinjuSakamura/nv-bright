@@ -1,0 +1,226 @@
+[
+  {
+    "file": "DSDT.aml",
+    "length": 683140,
+    "declared_length": 683140,
+    "checksum_mod256": 0,
+    "sha256": "e6272411fd65c2a04edc3e8d8d89e2706380ab46e6a7dd918cbca7efe1e64cdd"
+  },
+  {
+    "file": "SSDT1.aml",
+    "length": 302,
+    "declared_length": 302,
+    "checksum_mod256": 0,
+    "sha256": "56a4e4c829219bafaf91e5cbebc62323e50b0a2957e90c4970601ec874e43e26"
+  },
+  {
+    "file": "SSDT10.aml",
+    "length": 4937,
+    "declared_length": 4937,
+    "checksum_mod256": 0,
+    "sha256": "7a76ab854fb0dcc6d4a4af7a79847dba32c5a28e27d0b9991794b1839057ff93"
+  },
+  {
+    "file": "SSDT11.aml",
+    "length": 4027,
+    "declared_length": 4027,
+    "checksum_mod256": 0,
+    "sha256": "272b4a41f4fe49250b440a263ece38df94254075348364173d6805367a7a9eac"
+  },
+  {
+    "file": "SSDT12.aml",
+    "length": 15304,
+    "declared_length": 15304,
+    "checksum_mod256": 0,
+    "sha256": "d5e5c8cfd9cd478844f163e381209174a0a58adc17e4bd3c098838324023a306"
+  },
+  {
+    "file": "SSDT13.aml",
+    "length": 262,
+    "declared_length": 262,
+    "checksum_mod256": 0,
+    "sha256": "5390d325cbf3be2160b7a2a7f7771b7ea414a3eb37d45d88d166116693f7eee7"
+  },
+  {
+    "file": "SSDT14.aml",
+    "length": 9342,
+    "declared_length": 9342,
+    "checksum_mod256": 0,
+    "sha256": "eaef850d3297e0b33c2228f748baaccb9db78265e16b3b0763f46a3b294704c3"
+  },
+  {
+    "file": "SSDT15.aml",
+    "length": 40082,
+    "declared_length": 40082,
+    "checksum_mod256": 0,
+    "sha256": "03d4d6de6da0ab0e2a86d82d342e09270319dd8c6740103a929c74790537d806"
+  },
+  {
+    "file": "SSDT16.aml",
+    "length": 2634,
+    "declared_length": 2634,
+    "checksum_mod256": 0,
+    "sha256": "e8b6dde7bbf9020244efcf8b2b8a3c1e853dafa9108003544e75bcaa9913787f"
+  },
+  {
+    "file": "SSDT17.aml",
+    "length": 51,
+    "declared_length": 51,
+    "checksum_mod256": 0,
+    "sha256": "9fd696a41c415c0e817ef6c267de696deac9acead6e81fd37787176bbe6ac8ca"
+  },
+  {
+    "file": "SSDT18.aml",
+    "length": 4460,
+    "declared_length": 4460,
+    "checksum_mod256": 0,
+    "sha256": "e16a8c13ce43ead4edaa639866eca8dad52a54df7cec31420eef653c30f46a2a"
+  },
+  {
+    "file": "SSDT19.aml",
+    "length": 1915,
+    "declared_length": 1915,
+    "checksum_mod256": 0,
+    "sha256": "0e52d89711083860cbef8498a5ff5b10763a4bb9193b001c28e6d485e63c9ffa"
+  },
+  {
+    "file": "SSDT2.aml",
+    "length": 908,
+    "declared_length": 908,
+    "checksum_mod256": 0,
+    "sha256": "39701a6c9f4cf1dc6a82aa9f61de1de8df2870a6af0775d73eb8ca7910f82493"
+  },
+  {
+    "file": "SSDT20.aml",
+    "length": 23735,
+    "declared_length": 23735,
+    "checksum_mod256": 0,
+    "sha256": "09954fb24d17e3fae95cf42e48ffd85c765910bb82d4093b185b650b3495ca25"
+  },
+  {
+    "file": "SSDT21.aml",
+    "length": 56277,
+    "declared_length": 56277,
+    "checksum_mod256": 0,
+    "sha256": "b16b7810c9ac9732ffdb45f6f042ed35702633111b2fcc438ea129f1e49649fd"
+  },
+  {
+    "file": "SSDT22.aml",
+    "length": 5135,
+    "declared_length": 5135,
+    "checksum_mod256": 0,
+    "sha256": "bc130e0a2cbe518a416a945ab44f4720dc8e5577883865f1d84b78d257f2902a"
+  },
+  {
+    "file": "SSDT23.aml",
+    "length": 14492,
+    "declared_length": 14492,
+    "checksum_mod256": 0,
+    "sha256": "afbf51c7319bd657b976fdc1997389c0eda1c3a6ba869369e71bf232a9cac91b"
+  },
+  {
+    "file": "SSDT24.aml",
+    "length": 3238,
+    "declared_length": 3238,
+    "checksum_mod256": 0,
+    "sha256": "c8361ff025045d491458ba0d48d67b09a67bbb4e512d9760990ac1248ec9325b"
+  },
+  {
+    "file": "SSDT25.aml",
+    "length": 24130,
+    "declared_length": 24130,
+    "checksum_mod256": 0,
+    "sha256": "17e2e7271926e7e1c6fd07b66d9bd5420dbb2ab46a51cdcf950becfa7e1bf977"
+  },
+  {
+    "file": "SSDT26.aml",
+    "length": 12237,
+    "declared_length": 12237,
+    "checksum_mod256": 0,
+    "sha256": "05791bd180c26977b7356c5eb380871c13987f3607c8bb1e85dca503ce1711d3"
+  },
+  {
+    "file": "SSDT27.aml",
+    "length": 5555,
+    "declared_length": 5555,
+    "checksum_mod256": 0,
+    "sha256": "e1fe58408c84f4a241a28616775cd58327682171b71713a738b2effc74588676"
+  },
+  {
+    "file": "SSDT28.aml",
+    "length": 10266,
+    "declared_length": 10266,
+    "checksum_mod256": 0,
+    "sha256": "f5257abc97180f90dfa30716937a9cbf6f7524d54fe1d0f3ce86e76ce5c2b91c"
+  },
+  {
+    "file": "SSDT29.aml",
+    "length": 10451,
+    "declared_length": 10451,
+    "checksum_mod256": 0,
+    "sha256": "bb54cba256cb3ef4ff6f1d34f8ad6ebbb5fe186b465bdab7e822cd25d03679fb"
+  },
+  {
+    "file": "SSDT3.aml",
+    "length": 3370,
+    "declared_length": 3370,
+    "checksum_mod256": 0,
+    "sha256": "ae12294ed22cabfa8e5c5413c7c5e803540fee7b9a562ad2b19b150d150585cd"
+  },
+  {
+    "file": "SSDT30.aml",
+    "length": 11739,
+    "declared_length": 11739,
+    "checksum_mod256": 0,
+    "sha256": "6c1943049848c5f43a84634b0099f48f009219237187f23056e91eee6dab859d"
+  },
+  {
+    "file": "SSDT31.aml",
+    "length": 248,
+    "declared_length": 248,
+    "checksum_mod256": 0,
+    "sha256": "08e3692c45802c3048b3eb815752ff65a31a62d68c66fe7d2a724c734bb3ec01"
+  },
+  {
+    "file": "SSDT4.aml",
+    "length": 1640,
+    "declared_length": 1640,
+    "checksum_mod256": 0,
+    "sha256": "6188c7f22cf37bca3231c0768edde234476db0bd315f55c4e5adf9a94d68fdd7"
+  },
+  {
+    "file": "SSDT5.aml",
+    "length": 1531,
+    "declared_length": 1531,
+    "checksum_mod256": 0,
+    "sha256": "71c040dac93d9a7dc2bc07fc9f20b318de747eedc5ae8e956e8a967e57ecbf9c"
+  },
+  {
+    "file": "SSDT6.aml",
+    "length": 427,
+    "declared_length": 427,
+    "checksum_mod256": 0,
+    "sha256": "28a04b88d973127b09900dbaca77db993b4ef5afbaa4a5a8bfda71b3f4d76b44"
+  },
+  {
+    "file": "SSDT7.aml",
+    "length": 916,
+    "declared_length": 916,
+    "checksum_mod256": 0,
+    "sha256": "e08f8f7167872b2f271619b3d888002aeff9ae10d5b26a1d9b63df731ec4eb82"
+  },
+  {
+    "file": "SSDT8.aml",
+    "length": 7087,
+    "declared_length": 7087,
+    "checksum_mod256": 0,
+    "sha256": "c73883d1d63738fb37fe8e93a39e1fe4825156d10b48905db3d4551b689d254a"
+  },
+  {
+    "file": "SSDT9.aml",
+    "length": 5664,
+    "declared_length": 5664,
+    "checksum_mod256": 0,
+    "sha256": "619de7ad03620834484c0570d0164ac3d66113bef1d1ab95427a9a35d598db43"
+  }
+]

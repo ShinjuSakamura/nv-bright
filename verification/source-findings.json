@@ -1,0 +1,63 @@
+{
+  "scope": "NVIDIA discrete-mode low maximum luminance on Lenovo IAX11 EDO EF25QBA63.E",
+  "driver_version": "595.99.02",
+  "official_source_commit": "e394a404108a9ce5bba988c1dddf694dabbd4a43",
+  "bios_version": "UFCN27WW",
+  "vga_bios_version": "98.06.45.40.1a",
+  "gsp_firmware_version": "595.99.02",
+  "native_backlight_device": "nvidia_0",
+  "linux_brightness_unit": "PERCENT100",
+  "linux_set_command": "0x730292",
+  "firmware_route_flag": "0x40 RMCTRL_FLAGS_ROUTE_TO_PHYSICAL",
+  "initialization_bios_query": "NV_ACPI_GENERIC_FUNC_GETBACKLIGHT",
+  "initialization_firmware_command": "NV2080_CTRL_CMD_INTERNAL_INIT_BRIGHTC_STATE_LOAD",
+  "known_panel_state_before_workaround": {
+    "absolute_luminance_supported": true,
+    "mode": "0x0a",
+    "pwm_bit_count": 8,
+    "relative_brightness": 255,
+    "target_millinit": 400000
+  },
+  "hardware_trial": {
+    "target_millinit": 250000,
+    "mode": "0x8a",
+    "user_observed_brightening": true,
+    "restore_verified": true
+  },
+  "absolute_mode_disabled_alone_is_not_proof_of_defect": true,
+  "runtime_acpi_backlight_configuration": "128 bytes, successful, identical to the disassembled package",
+  "read_only_probe_uses_official_sdk_structures": true,
+  "read_only_probe_simulation_cases_passed": 2,
+  "system_packages_installed": false,
+  "service_observed_active": true,
+  "exact_culprit_not_yet_proven": true,
+  "acpi_capture": {
+    "table_count": 32,
+    "all_lengths_and_checksums_valid": true,
+    "nvidia_table": "SSDT26",
+    "nbci_get_backlight_present": true,
+    "returned_table_second_item": "0x0203",
+    "hdr_sdr_packages_identical": true
+  },
+  "additional_hypothesis": "High-byte-alignment workaround hypothesis not supported by the hardware A/B result.",
+  "diagnostic_client_allocation": "driver-assigned root client handle, official SDK ABI checked and mock-tested",
+  "rm_brightness_get_queries": {
+    "PERCENT100": "0x1b NV_ERR_INSUFFICIENT_PERMISSIONS",
+    "PERCENT1000": "0x1b NV_ERR_INSUFFICIENT_PERMISSIONS",
+    "NITS": "0x1b NV_ERR_INSUFFICIENT_PERMISSIONS",
+    "raw_zeros_are_not_valid_brightness_values": true
+  },
+  "relative_alignment_hypothesis": "not supported: 0x00ff and 0x40ff were similarly dim in mode 0x0a",
+  "relative_ab_preparation": {
+    "script": "/tmp/codex/2026-10-20/iax11-brightness/check-relative-brightness.sh",
+    "normal_and_failure_simulation_cases_passed": 5,
+    "phase_A_seconds": 5,
+    "phase_B_seconds": 8,
+    "automatic_panel_and_service_restore": true,
+    "hardware_tested": true
+  },
+  "relative_ab_result": "both stages noticeably dim, normal brightness returned after restoration",
+  "causal_localization": "Discrete-mode relative DPCD brightness path has a low effective brightness range; absolute-luminance path works at a target of 250 nits.",
+  "attribution_limit": "Public evidence does not distinguish NVIDIA GSP mode/calibration handling from panel relative-mode behavior or the semantics of BIOS calibration data.",
+  "service_enabled": true
+}

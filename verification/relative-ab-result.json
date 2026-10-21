@@ -1,0 +1,32 @@
+{
+  "test": "relative brightness high-byte A/B",
+  "hardware_completed": true,
+  "display": "EDO EF25QBA63.E / RTX 5060 / Lenovo IAX11",
+  "absolute_target_millinit": 250000,
+  "pwm_bit_count": 8,
+  "service_stopped_during_ab": true,
+  "A": {
+    "mode": "0x0a",
+    "relative": "0x00ff",
+    "duration_seconds": 5,
+    "user_observation": "both stages noticeably dimmer than normal"
+  },
+  "B": {
+    "mode": "0x0a",
+    "relative": "0x40ff",
+    "duration_seconds": 8,
+    "user_observation": "similar to A; both noticeably dimmer than normal"
+  },
+  "restoration": {
+    "mode": "0x8a",
+    "relative": "0x00ff",
+    "target_millinit": 250000,
+    "register_readback_passed": true,
+    "service_restarted": true,
+    "user_observation": "normal brightness returned"
+  },
+  "result": "No visible improvement from changing only the high byte; the high-byte-alignment workaround hypothesis was not supported.",
+  "supported_localization": "Brightness differs strongly between relative and absolute panel control paths.",
+  "exact_vendor_culprit_proven": false,
+  "log": "relative-ab.log"
+}

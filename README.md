@@ -1,60 +1,67 @@
-# nv-bright
+# nv-bright：Legion Y7000X IAX11
 
-`nv-bright` is a small user-space daemon I put together to workaround broken OLED brightness controls on my laptop when running in NVIDIA dGPU mode. 
+项目目录：`~/nv-bright`。
 
-**Note: This was created specifically for, and only tested on, a Lenovo Legion Pro 7 (83RU) with an RTX 5080 and a Samsung OLED panel (`ATNA60HU02-0`). I cannot guarantee it will work on anything else, though it might be helpful for people facing similar issues on other modern OLED laptops.**
+基于 [msteele/nv-bright](https://github.com/msteele/nv-bright) 的本机适配版，上游基线为 `c1263e9fbaffd738a100e2b3c5823c7c50c6fbaa`。使用原项目的 NVIDIA RM/AUX 接口，控制 EDO EF25QBA63.E OLED 面板的绝对亮度。
 
-## The Problem (As I Understand It)
-On my laptop, the brightness controls work perfectly when using the integrated graphics, but fail completely when switched to the discrete NVIDIA GPU.
+本机已验证：独显模式下设置 250 尼特，屏幕明显变亮；30 秒测试结束后，原模式与原目标值成功恢复并读回核对。系统亮度键与滑块调节已获用户确认。服务已启用并运行；实际重启和休眠恢复效果待验证。
 
-Even after applying an ACPI DSDT/SSDT override to force the BIOS to tell the NVIDIA driver to use the DPCD backlight interface (which successfully creates the `/sys/class/backlight/nvidia_0` file), moving the GNOME brightness slider does nothing to the actual screen.
+## 运行
 
-With some help from AI, we investigated and found that the NVIDIA driver (or its internal firmware) seems to be failing to actually send the required DisplayPort AUX commands to the panel when the slider is moved.
+当前由系统服务在后台运行，使用系统滑块或亮度键调节。需要前台运行时，在本机终端手动执行：
 
-## The Workaround
-`nv-bright` acts as a middleman. It watches the standard Linux `nvidia_0` backlight sysfs file for changes. When you move your brightness slider, `nv-bright` reads the requested percentage and uses the NVIDIA RM API (`CMD_DP_AUXCH_CTRL`) to manually write the raw byte values directly to the DPCD `PANEL_TARGET_LUMINANCE` registers (`0x734` - `0x736`).
-
-By bypassing the NVIDIA driver's internal backlight logic and talking directly to the hardware over the I2C/AUX bus, this tool successfully dims the screen.
-
-## Dynamic EDID Parsing
-The `nv-bright-wrapper` script uses `edid-decode` to read your OLED panel's raw EDID, attempts to find its true maximum luminance (in nits), and dynamically scales the brightness curve to match it. If it fails, it defaults to a safe 500 nits.
-
-## Installation
-
-### Prerequisites
-*   `gcc` and `make`
-*   `edid-decode` (used by the wrapper to automatically determine your screen's max nits)
-
-### Build and Install
 ```bash
-make
-sudo make install
+cd ~/nv-bright
+sudo systemctl stop nv-bright.service
+sudo ./nv-bright-wrapper
 ```
 
-### Enable the Daemon
+程序持续读取 `/sys/class/backlight/nvidia_0/brightness`，将亮度滑块映射到 5–250 尼特。启动脚本按自身位置查找同目录的可执行程序。前台运行时保持终端开启，Ctrl+C 停止程序；随后执行 `sudo systemctl start nv-bright.service` 恢复后台控制。
+
+手动查看面板状态或单次设置亮度时，先停止后台服务，操作结束后恢复：
+
 ```bash
+sudo systemctl stop nv-bright.service
+sudo ./nv-bright
+sudo ./nv-bright lum 250000
+sudo systemctl start nv-bright.service
+```
+
+`lum` 参数单位为毫尼特；250000 对应 250 尼特。程序接受的单次设置上限为 400000，启动脚本采用已实测的 250 尼特上限。
+
+## 开机自启
+
+服务已安装并启用，随附的 `nv-bright.service` 使用本机项目路径。需要重新安装服务时，由用户在本机终端手动执行：
+
+```bash
+sudo install -m 644 ~/nv-bright/nv-bright.service /etc/systemd/system/nv-bright.service
+sudo systemctl daemon-reload
 sudo systemctl enable --now nv-bright.service
 ```
 
-## Manual Usage
-You can also run `nv-bright` manually to inspect your display's DPCD capabilities or force a specific luminance for testing.
+启用服务前，用 Ctrl+C 结束前台的 nv-bright，保持单个控制进程。启用后可关闭终端。
+
+状态与日志：
 
 ```bash
-# Show current display state and capabilities
-sudo nv-bright
-
-# Watch the sysfs file and apply changes automatically (min nits, max nits)
-sudo nv-bright watch 5 500
-
-# Set a specific absolute luminance (in milli-cd/m²)
-sudo nv-bright lum 250000
-
-# Dump all eDP DPCD registers
-sudo nv-bright dump
+systemctl status nv-bright.service --no-pager
+journalctl -u nv-bright.service -b --no-pager
 ```
 
-## Note for Fedora / RPM Users
-An RPM spec file (`nv-bright.spec`) is included. You can build a native package using `rpmbuild -ba nv-bright.spec`.
+停止并取消自启：
 
-## Disclaimer
-This tool interacts directly with your graphics card's low-level RM API. Use this entirely at your own risk. It is intended as a temporary band-aid until the underlying bugs are resolved.
+```bash
+sudo systemctl disable --now nv-bright.service
+```
+
+## 编译与验证资料
+
+使用已有的 GCC 和 make 编译：
+
+```bash
+make
+```
+
+`iax11.patch` 包含相对上游的当前修改；Git 历史保留在 `.git/`。`verification/` 保存实机日志、只读面板探测和模拟检查记录。`sha256sum -c SHA256SUMS` 可核对交付文件。
+
+适配内容包括 NVIDIA AUX 长度编码、绝对亮度模式启用及读回检查、亮度范围和参数校验。适配状态见 `verification/适配判定.md`；亮度模式的实机定位结果见 `verification/亮度模式定位.md`。
