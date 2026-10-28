@@ -1,0 +1,106 @@
+#!/usr/bin/python3
+"""Restore panel brightness after the local graphical session unlocks."""
+
+import os
+from pathlib import Path
+import signal
+import subprocess
+import sys
+
+import dbus
+from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GLib, GLibUnix
+
+LOGIN = "org.freedesktop.login1"
+SESSION = LOGIN + ".Session"
+PROPERTIES = "org.freedesktop.DBus.Properties"
+
+
+def main():
+    DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    loop = GLib.MainLoop()
+    watcher = None
+    pending = {}
+    exit_code = 0
+
+    def session_ready(path):
+        try:
+            props = dbus.Interface(bus.get_object(LOGIN, path, introspect=False), PROPERTIES).GetAll(SESSION)
+        except dbus.DBusException as error:
+            print(f"nv-bright: cannot inspect unlocked session: {error}", file=sys.stderr, flush=True)
+            return False
+        return (
+            not props.get("LockedHint", True)
+            and props.get("Active", False)
+            and not props.get("Remote", True)
+            and props.get("Type") in ("wayland", "x11")
+            and props.get("Seat", (None,))[0] == "seat0"
+        )
+
+    def refresh(path):
+        pending.pop(path, None)
+        if watcher is not None and session_ready(path):
+            try:
+                os.kill(watcher.pid, signal.SIGUSR1)
+                print("nv-bright: local session unlocked, refreshing brightness", file=sys.stderr, flush=True)
+            except ProcessLookupError:
+                pass
+        return GLib.SOURCE_REMOVE
+
+    def changed(interface, properties, invalidated, path):
+        if "LockedHint" not in properties:
+            return
+        timer = pending.pop(path, None)
+        if timer is not None:
+            GLib.source_remove(timer)
+        if not properties["LockedHint"] and session_ready(path):
+            pending[path] = GLib.timeout_add(500, refresh, path)
+
+    def child_exited(pid, status):
+        nonlocal exit_code
+        watcher.returncode = os.waitstatus_to_exitcode(status)
+        exit_code = abs(watcher.returncode)
+        loop.quit()
+
+    def stop(user_data=None):
+        loop.quit()
+        return GLib.SOURCE_REMOVE
+
+    def disconnected(connection):
+        nonlocal exit_code
+        exit_code = 1
+        loop.quit()
+
+    bus.add_signal_receiver(
+        changed,
+        signal_name="PropertiesChanged",
+        dbus_interface=PROPERTIES,
+        bus_name=LOGIN,
+        arg0=SESSION,
+        path_keyword="path",
+    )
+    bus.call_on_disconnection(disconnected)
+    binary = Path(__file__).resolve().with_name("nv-bright")
+    watcher = subprocess.Popen([str(binary), "watch", *sys.argv[1:]])
+    GLib.child_watch_add(watcher.pid, child_exited)
+    GLibUnix.signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, stop, None)
+    GLibUnix.signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, stop, None)
+    print("nv-bright: listening for local graphical session unlocks", file=sys.stderr, flush=True)
+    try:
+        loop.run()
+    finally:
+        for timer in pending.values():
+            GLib.source_remove(timer)
+        if watcher.returncode is None:
+            watcher.terminate()
+            try:
+                watcher.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                watcher.kill()
+                watcher.wait()
+    return exit_code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

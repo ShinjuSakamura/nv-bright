@@ -13,6 +13,7 @@ nv-bright: nv-bright.c
 install: nv-bright
 	install -Dm755 nv-bright $(DESTDIR)$(BINDIR)/nv-bright
 	install -Dm755 nv-bright-wrapper $(DESTDIR)$(BINDIR)/nv-bright-wrapper
+	install -Dm755 nv-bright-session $(DESTDIR)$(BINDIR)/nv-bright-session
 	install -Dm644 nv-bright.service $(DESTDIR)$(UNITDIR)/nv-bright.service
 
 clean:

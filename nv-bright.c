@@ -24,6 +24,9 @@
 #include <errno.h>
 #include <math.h>
 #include <poll.h>
+#include <glob.h>
+#include <signal.h>
+#include <stdatomic.h>
 
 #define NV_ESC_RM_ALLOC    0x2B
 #define NV_ESC_RM_CONTROL  0x2A
@@ -58,6 +61,12 @@ typedef struct { int ctl_fd; } REG_FD;
 
 static int ctl_fd, dev_fd;
 static int quiet;  /* suppress verbose output */
+static atomic_int refresh_requested;
+
+static void request_refresh(int signum) {
+    (void)signum;
+    atomic_store_explicit(&refresh_requested, 1, memory_order_relaxed);
+}
 
 static int rm_alloc(int fd, uint32_t r, uint32_t p, uint32_t n, int32_t c, void *a, uint32_t s) {
     NVOS21 x = {r, p, n, c, (uint64_t)(uintptr_t)a, s, 0};
@@ -166,9 +175,38 @@ static uint32_t get_luminance(uint32_t edp) {
     return b[0] | (b[1] << 8) | (b[2] << 16);
 }
 
+static int panel_is_off(void) {
+    /* Limit the power check to eDP connectors on the backlight's GPU. */
+    glob_t paths = {0};
+    int off = 0;
+    if (glob("/sys/class/backlight/nvidia_0/device/drm/card*/card*-eDP-*/dpms",
+             0, NULL, &paths) == 0) {
+        for (size_t i = 0; i < paths.gl_pathc; i++) {
+            int fd = open(paths.gl_pathv[i], O_RDONLY);
+            if (fd < 0) continue;
+            char state[16] = {0};
+            ssize_t n = read(fd, state, sizeof(state) - 1);
+            close(fd);
+            if (n <= 0) continue;
+            if (strncmp(state, "On", 2) == 0) { off = 0; break; }
+            if (strncmp(state, "Off", 3) == 0 ||
+                strncmp(state, "Standby", 7) == 0 ||
+                strncmp(state, "Suspend", 7) == 0) off = 1;
+        }
+    }
+    globfree(&paths);
+    return off;
+}
+
 int main(int argc, char **argv)
 {
     quiet = (argc >= 2 && strcmp(argv[1], "watch") == 0);
+    if (quiet) {
+        struct sigaction action = {0};
+        action.sa_handler = request_refresh;
+        sigemptyset(&action.sa_mask);
+        if (sigaction(SIGUSR1, &action, NULL) < 0) { perror("sigaction"); return 1; }
+    }
 
     if (init_rm()) return 1;
 
@@ -203,7 +241,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "nv-bright: watching %s, display 0x%x, range %.0f-%.0f mcd/m²\n",
                 sysfs, edp, LUM_MIN, LUM_MAX);
 
-        int last_val = -1;
+        int last_val = -1, recovering = 0;
         for (;;) {
             char buf[32];
             lseek(sysfs_fd, 0, SEEK_SET);
@@ -212,29 +250,43 @@ int main(int argc, char **argv)
             buf[n] = '\0';
             int val = atoi(buf);
 
-            if (val != last_val) {
+            int refresh = atomic_exchange_explicit(&refresh_requested, 0, memory_order_relaxed);
+            if (val != last_val || refresh) {
+                /* Keep the display asleep; force a refresh when it wakes. */
+                if (panel_is_off()) {
+                    last_val = -1;
+                    usleep(500000);
+                    continue;
+                }
                 uint32_t lum;
                 if (val <= 0) lum = (uint32_t)LUM_MIN;
                 else if (val >= 100) lum = (uint32_t)LUM_MAX;
                 else lum = (uint32_t)(LUM_MIN * pow(LUM_MAX / LUM_MIN, val / 100.0));
 
-                if (set_luminance(edp, lum) != 0) {
-                    /* DPCD write failed — driver state is likely bad.
-                     * Reinitialize RM client and try again. */
-                    fprintf(stderr, "nv-bright: DPCD write failed, reinitializing RM...\n");
-                    close(ctl_fd);
+                int r = set_luminance(edp, lum);
+                if (r != 0) {
+                    if (!recovering)
+                        fprintf(stderr, "nv-bright: DPCD update failed, retrying RM initialization\n");
+                    recovering = 1;
                     close(dev_fd);
-                    if (init_rm() == 0 && find_edp() == edp) {
-                        /* Reinitialization successful, retry the write */
-                        set_luminance(edp, lum);
-                        last_val = val;
-                    } else {
-                        /* Reinitialization failed, wait and let loop retry */
-                        usleep(500000);
+                    close(ctl_fd);
+                    if (init_rm() == 0) {
+                        uint32_t found = find_edp();
+                        if (found) {
+                            edp = found;
+                            r = set_luminance(edp, lum);
+                        }
                     }
-                } else {
-                    last_val = val;
+                    if (r != 0) {
+                        last_val = -1;
+                        usleep(1000000);
+                        continue;
+                    }
                 }
+                if (recovering || refresh)
+                    fprintf(stderr, "nv-bright: restored luminance to %u mcd/m²\n", lum);
+                recovering = 0;
+                last_val = val;
             }
 
             struct pollfd pfd = { .fd = sysfs_fd, .events = POLLPRI | POLLERR };

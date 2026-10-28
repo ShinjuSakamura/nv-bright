@@ -39,7 +39,7 @@
     "returned_table_second_item": "0x0203",
     "hdr_sdr_packages_identical": true
   },
-  "additional_hypothesis": "High-byte-alignment workaround hypothesis not supported by the hardware A/B result.",
+  "additional_hypothesis": "Single-byte high-register write did not visibly improve brightness. Full two-byte write behavior was not tested; no panel latching specification has been obtained.",
   "diagnostic_client_allocation": "driver-assigned root client handle, official SDK ABI checked and mock-tested",
   "rm_brightness_get_queries": {
     "PERCENT100": "0x1b NV_ERR_INSUFFICIENT_PERMISSIONS",
@@ -47,7 +47,7 @@
     "NITS": "0x1b NV_ERR_INSUFFICIENT_PERMISSIONS",
     "raw_zeros_are_not_valid_brightness_values": true
   },
-  "relative_alignment_hypothesis": "not supported: 0x00ff and 0x40ff were similarly dim in mode 0x0a",
+  "relative_alignment_hypothesis": "unresolved: single-byte 0x722=0x40 gave no visible improvement; do not treat as a full two-byte alignment test",
   "relative_ab_preparation": {
     "script": "/tmp/codex/2026-10-20/iax11-brightness/check-relative-brightness.sh",
     "normal_and_failure_simulation_cases_passed": 5,
@@ -58,6 +58,28 @@
   },
   "relative_ab_result": "both stages noticeably dim, normal brightness returned after restoration",
   "causal_localization": "Discrete-mode relative DPCD brightness path has a low effective brightness range; absolute-luminance path works at a target of 250 nits.",
-  "attribution_limit": "Public evidence does not distinguish NVIDIA GSP mode/calibration handling from panel relative-mode behavior or the semantics of BIOS calibration data.",
-  "service_enabled": true
+  "attribution_limit": "NVIDIA Linux backlight mode/range handling is the leading candidate. OEM configuration semantics and panel relative-mode compatibility remain unresolved; Windows SDR state and register snapshot are pending.",
+  "service_enabled": true,
+  "user_reported_windows_discrete_brightness_normal": true,
+  "windows_hdr_state": "unknown; user clarification pending",
+  "windows_dpcd_snapshot_collected": false,
+  "primary_vendor_for_investigation": "NVIDIA Linux display/backlight stack",
+  "engineering_confidence_percent": 85,
+  "confidence_kind": "subjective engineering judgment, not statistical probability or vendor confirmation",
+  "service_boot_validation": {
+    "boot_id": "0de87c6b-adb3-4349-b015-007fcaf65de7",
+    "active_enter_timestamp": "2026-10-20 18:06:13 PDT",
+    "main_pid": 2237,
+    "enabled": true,
+    "active": true
+  },
+  "windows_snapshot_preparation": {
+    "archive": "windows-snapshot.zip",
+    "backend": "cnbright/gpu_aux",
+    "commit": "eda49e230b48a7a8b995b664a8a0756b2bde99f1",
+    "code_unchanged": true,
+    "mock_dll_e2e_cases_passed": 4,
+    "hardware_operations": "native DPCD read only",
+    "windows_hardware_tested": false
+  }
 }

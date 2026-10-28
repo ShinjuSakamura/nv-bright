@@ -1,8 +1,20 @@
+diff --git a/Makefile b/Makefile
+index 927685f..2d23260 100644
+--- a/Makefile
++++ b/Makefile
+@@ -13,6 +13,7 @@ nv-bright: nv-bright.c
+ install: nv-bright
+ 	install -Dm755 nv-bright $(DESTDIR)$(BINDIR)/nv-bright
+ 	install -Dm755 nv-bright-wrapper $(DESTDIR)$(BINDIR)/nv-bright-wrapper
++	install -Dm755 nv-bright-session $(DESTDIR)$(BINDIR)/nv-bright-session
+ 	install -Dm644 nv-bright.service $(DESTDIR)$(UNITDIR)/nv-bright.service
+ 
+ clean:
 diff --git a/README.md b/README.md
-index 3f3c6a6..c891748 100644
+index 3f3c6a6..c7a8d06 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,60 +1,67 @@
+@@ -1,60 +1,71 @@
 -# nv-bright
 +# nv-bright：Legion Y7000X IAX11
  
@@ -14,7 +26,7 @@ index 3f3c6a6..c891748 100644
  
 -## The Problem (As I Understand It)
 -On my laptop, the brightness controls work perfectly when using the integrated graphics, but fail completely when switched to the discrete NVIDIA GPU.
-+本机已验证：独显模式下设置 250 尼特，屏幕明显变亮；30 秒测试结束后，原模式与原目标值成功恢复并读回核对。系统亮度键与滑块调节已获用户确认。服务已启用并运行；实际重启和休眠恢复效果待验证。
++本机已验证：独显模式下设置 250 尼特，屏幕明显变亮；30 秒测试结束后，原模式与原目标值成功恢复并读回核对。系统亮度键与滑块调节已获用户确认。服务已启用并运行，已观察到本次开机自动启动成功；休眠恢复效果待验证。
  
 -Even after applying an ACPI DSDT/SSDT override to force the BIOS to tell the NVIDIA driver to use the DPCD backlight interface (which successfully creates the `/sys/class/backlight/nvidia_0` file), moving the GNOME brightness slider does nothing to the actual screen.
 +## 运行
@@ -31,51 +43,54 @@ index 3f3c6a6..c891748 100644
 +```
  
 -By bypassing the NVIDIA driver's internal backlight logic and talking directly to the hardware over the I2C/AUX bus, this tool successfully dims the screen.
-+程序持续读取 `/sys/class/backlight/nvidia_0/brightness`，将亮度滑块映射到 5–250 尼特。启动脚本按自身位置查找同目录的可执行程序。前台运行时保持终端开启，Ctrl+C 停止程序；随后执行 `sudo systemctl start nv-bright.service` 恢复后台控制。
++程序持续读取 `/sys/class/backlight/nvidia_0/brightness`，将亮度滑块映射到 5–350 尼特。启动脚本按自身位置查找同目录的可执行程序。前台运行时保持终端开启，Ctrl+C 停止程序；随后执行 `sudo systemctl start nv-bright.service` 恢复后台控制。
  
 -## Dynamic EDID Parsing
 -The `nv-bright-wrapper` script uses `edid-decode` to read your OLED panel's raw EDID, attempts to find its true maximum luminance (in nits), and dynamically scales the brightness curve to match it. If it fails, it defaults to a safe 500 nits.
-+手动查看面板状态或单次设置亮度时，先停止后台服务，操作结束后恢复：
++`nv-bright-session` 通过系统 D-Bus 订阅本机 `seat0` 图形会话的解锁通知，解锁后等待 500 毫秒，再通知 `watch` 按当前滑块数值恢复一次亮度。监听器使用系统已有的 Python 3、D-Bus 和 GLib 组件，以事件循环等待通知。锁屏、远程会话、非活动会话和其他座席的通知不会触发恢复；再次锁屏会取消尚未执行的恢复。
  
 -## Installation
-+```bash
-+sudo systemctl stop nv-bright.service
-+sudo ./nv-bright
-+sudo ./nv-bright lum 250000
-+sudo systemctl start nv-bright.service
-+```
++`watch` 在启动、亮度数值变化或收到恢复通知时写入面板，平时没有周期性的面板寄存器核对。屏幕关闭时暂停亮度读写，尚未完成的设置会等待屏幕点亮。NVIDIA 接口暂时不可用时重试，只有写入并读回核对成功才记录为已设置。事件恢复检查见 `verification/watch-recovery.json`；本机闲置锁屏后的解锁恢复效果待验证。
  
 -### Prerequisites
 -*   `gcc` and `make`
 -*   `edid-decode` (used by the wrapper to automatically determine your screen's max nits)
-+`lum` 参数单位为毫尼特；250000 对应 250 尼特。程序接受的单次设置上限为 400000，启动脚本采用已实测的 250 尼特上限。
-+
-+## 开机自启
-+
-+服务已安装并启用，随附的 `nv-bright.service` 使用本机项目路径。需要重新安装服务时，由用户在本机终端手动执行：
++手动查看面板状态或单次设置亮度时，先停止后台服务，操作结束后恢复：
  
 -### Build and Install
  ```bash
 -make
 -sudo make install
-+sudo install -m 644 ~/nv-bright/nv-bright.service /etc/systemd/system/nv-bright.service
-+sudo systemctl daemon-reload
-+sudo systemctl enable --now nv-bright.service
++sudo systemctl stop nv-bright.service
++sudo ./nv-bright
++sudo ./nv-bright lum 250000
++sudo systemctl start nv-bright.service
  ```
  
 -### Enable the Daemon
-+启用服务前，用 Ctrl+C 结束前台的 nv-bright，保持单个控制进程。启用后可关闭终端。
++`lum` 参数单位为毫尼特；250000 对应 250 尼特。程序接受的单次设置上限为 400000，启动脚本当前配置的上限为 350 尼特。
 +
-+状态与日志：
++## 开机自启
++
++服务已安装并启用，随附的 `nv-bright.service` 使用本机项目路径。需要重新安装服务时，由用户在本机终端手动执行：
 +
  ```bash
--sudo systemctl enable --now nv-bright.service
-+systemctl status nv-bright.service --no-pager
-+journalctl -u nv-bright.service -b --no-pager
++sudo install -m 644 ~/nv-bright/nv-bright.service /etc/systemd/system/nv-bright.service
++sudo systemctl daemon-reload
+ sudo systemctl enable --now nv-bright.service
  ```
  
 -## Manual Usage
 -You can also run `nv-bright` manually to inspect your display's DPCD capabilities or force a specific luminance for testing.
++启用服务前，用 Ctrl+C 结束前台的 nv-bright，保持单个控制进程。启用后可关闭终端。
++
++状态与日志：
++
++```bash
++systemctl status nv-bright.service --no-pager
++journalctl -u nv-bright.service -b --no-pager
++```
++
 +停止并取消自启：
  
  ```bash
@@ -100,7 +115,7 @@ index 3f3c6a6..c891748 100644
  
 -## Note for Fedora / RPM Users
 -An RPM spec file (`nv-bright.spec`) is included. You can build a native package using `rpmbuild -ba nv-bright.spec`.
-+`iax11.patch` 包含相对上游的当前修改；Git 历史保留在 `.git/`。`verification/` 保存实机日志、只读面板探测和模拟检查记录。`sha256sum -c SHA256SUMS` 可核对交付文件。
++`iax11.patch` 包含相对上游的程序、启动配置、构建文件和运行说明补丁；Git 历史保留在 `.git/`。`verification/` 保存实机日志、只读面板探测和模拟检查记录。`sha256sum -c SHA256SUMS` 可核对交付文件。
  
 -## Disclaimer
 -This tool interacts directly with your graphics card's low-level RM API. Use this entirely at your own risk. It is intended as a temporary band-aid until the underlying bugs are resolved.
@@ -108,7 +123,7 @@ index 3f3c6a6..c891748 100644
 diff --git a/nv-bright-wrapper b/nv-bright-wrapper
 old mode 100644
 new mode 100755
-index ee91126..fdd9454
+index ee91126..512cc83
 --- a/nv-bright-wrapper
 +++ b/nv-bright-wrapper
 @@ -1,25 +1,12 @@
@@ -135,19 +150,43 @@ index ee91126..fdd9454
 +SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 +# IAX11 range verified by the 250 cd/m² hardware trial.
  MIN_NITS=5
-+MAX_NITS=250
++MAX_NITS=350
  
 -echo "Starting nv-bright watch mode with dynamic limits: $MIN_NITS to $MAX_NITS cd/m²"
 +echo "Starting nv-bright watch mode: $MIN_NITS to $MAX_NITS cd/m²"
  
- # Exec replaces the bash process with the nv-bright daemon, so systemd tracks it properly
+-# Exec replaces the bash process with the nv-bright daemon, so systemd tracks it properly
 -exec /usr/bin/nv-bright watch "$MIN_NITS" "$MAX_NITS"
-+exec "$SCRIPT_DIR/nv-bright" watch "$MIN_NITS" "$MAX_NITS"
++# The session listener owns the brightness process and forwards service shutdown.
++exec "$SCRIPT_DIR/nv-bright-session" "$MIN_NITS" "$MAX_NITS"
 diff --git a/nv-bright.c b/nv-bright.c
-index 8e1c472..c2806b1 100644
+index 8e1c472..bef3b30 100644
 --- a/nv-bright.c
 +++ b/nv-bright.c
-@@ -72,8 +72,11 @@ static int rm_ctrl(uint32_t o, int32_t c, void *p, uint32_t s) {
+@@ -24,6 +24,9 @@
+ #include <errno.h>
+ #include <math.h>
+ #include <poll.h>
++#include <glob.h>
++#include <signal.h>
++#include <stdatomic.h>
+ 
+ #define NV_ESC_RM_ALLOC    0x2B
+ #define NV_ESC_RM_CONTROL  0x2A
+@@ -58,6 +61,12 @@ typedef struct { int ctl_fd; } REG_FD;
+ 
+ static int ctl_fd, dev_fd;
+ static int quiet;  /* suppress verbose output */
++static atomic_int refresh_requested;
++
++static void request_refresh(int signum) {
++    (void)signum;
++    atomic_store_explicit(&refresh_requested, 1, memory_order_relaxed);
++}
+ 
+ static int rm_alloc(int fd, uint32_t r, uint32_t p, uint32_t n, int32_t c, void *a, uint32_t s) {
+     NVOS21 x = {r, p, n, c, (uint64_t)(uintptr_t)a, s, 0};
+@@ -72,8 +81,11 @@ static int rm_ctrl(uint32_t o, int32_t c, void *p, uint32_t s) {
  }
  
  static int dpcd_read(uint32_t did, uint32_t addr, uint8_t *buf, uint32_t sz) {
@@ -160,7 +199,7 @@ index 8e1c472..c2806b1 100644
      if (r) {
          if (!quiet) fprintf(stderr, "  DPCD read 0x%04x failed: 0x%x\n", addr, r);
          return r;
-@@ -88,9 +91,12 @@ static int dpcd_read(uint32_t did, uint32_t addr, uint8_t *buf, uint32_t sz) {
+@@ -88,9 +100,12 @@ static int dpcd_read(uint32_t did, uint32_t addr, uint8_t *buf, uint32_t sz) {
  }
  
  static int dpcd_write(uint32_t did, uint32_t addr, const uint8_t *buf, uint32_t sz) {
@@ -176,7 +215,7 @@ index 8e1c472..c2806b1 100644
  }
  
  static int init_rm(void) {
-@@ -132,8 +138,26 @@ static uint32_t find_edp(void) {
+@@ -132,8 +147,26 @@ static uint32_t find_edp(void) {
  }
  
  static int set_luminance(uint32_t edp, uint32_t mcd) {
@@ -204,7 +243,46 @@ index 8e1c472..c2806b1 100644
  }
  
  static uint32_t get_luminance(uint32_t edp) {
-@@ -154,12 +178,23 @@ int main(int argc, char **argv)
+@@ -142,9 +175,38 @@ static uint32_t get_luminance(uint32_t edp) {
+     return b[0] | (b[1] << 8) | (b[2] << 16);
+ }
+ 
++static int panel_is_off(void) {
++    /* Limit the power check to eDP connectors on the backlight's GPU. */
++    glob_t paths = {0};
++    int off = 0;
++    if (glob("/sys/class/backlight/nvidia_0/device/drm/card*/card*-eDP-*/dpms",
++             0, NULL, &paths) == 0) {
++        for (size_t i = 0; i < paths.gl_pathc; i++) {
++            int fd = open(paths.gl_pathv[i], O_RDONLY);
++            if (fd < 0) continue;
++            char state[16] = {0};
++            ssize_t n = read(fd, state, sizeof(state) - 1);
++            close(fd);
++            if (n <= 0) continue;
++            if (strncmp(state, "On", 2) == 0) { off = 0; break; }
++            if (strncmp(state, "Off", 3) == 0 ||
++                strncmp(state, "Standby", 7) == 0 ||
++                strncmp(state, "Suspend", 7) == 0) off = 1;
++        }
++    }
++    globfree(&paths);
++    return off;
++}
++
+ int main(int argc, char **argv)
+ {
+     quiet = (argc >= 2 && strcmp(argv[1], "watch") == 0);
++    if (quiet) {
++        struct sigaction action = {0};
++        action.sa_handler = request_refresh;
++        sigemptyset(&action.sa_mask);
++        if (sigaction(SIGUSR1, &action, NULL) < 0) { perror("sigaction"); return 1; }
++    }
+ 
+     if (init_rm()) return 1;
+ 
+@@ -154,12 +216,23 @@ int main(int argc, char **argv)
      if (quiet) {
          /* watch mode — minimal output */
          const char *sysfs = "/sys/class/backlight/nvidia_0/brightness";
@@ -233,7 +311,75 @@ index 8e1c472..c2806b1 100644
          }
  
          int sysfs_fd = open(sysfs, O_RDONLY);
-@@ -208,9 +243,8 @@ int main(int argc, char **argv)
+@@ -168,7 +241,7 @@ int main(int argc, char **argv)
+         fprintf(stderr, "nv-bright: watching %s, display 0x%x, range %.0f-%.0f mcd/m²\n",
+                 sysfs, edp, LUM_MIN, LUM_MAX);
+ 
+-        int last_val = -1;
++        int last_val = -1, recovering = 0;
+         for (;;) {
+             char buf[32];
+             lseek(sysfs_fd, 0, SEEK_SET);
+@@ -177,29 +250,43 @@ int main(int argc, char **argv)
+             buf[n] = '\0';
+             int val = atoi(buf);
+ 
+-            if (val != last_val) {
++            int refresh = atomic_exchange_explicit(&refresh_requested, 0, memory_order_relaxed);
++            if (val != last_val || refresh) {
++                /* Keep the display asleep; force a refresh when it wakes. */
++                if (panel_is_off()) {
++                    last_val = -1;
++                    usleep(500000);
++                    continue;
++                }
+                 uint32_t lum;
+                 if (val <= 0) lum = (uint32_t)LUM_MIN;
+                 else if (val >= 100) lum = (uint32_t)LUM_MAX;
+                 else lum = (uint32_t)(LUM_MIN * pow(LUM_MAX / LUM_MIN, val / 100.0));
+ 
+-                if (set_luminance(edp, lum) != 0) {
+-                    /* DPCD write failed — driver state is likely bad.
+-                     * Reinitialize RM client and try again. */
+-                    fprintf(stderr, "nv-bright: DPCD write failed, reinitializing RM...\n");
+-                    close(ctl_fd);
++                int r = set_luminance(edp, lum);
++                if (r != 0) {
++                    if (!recovering)
++                        fprintf(stderr, "nv-bright: DPCD update failed, retrying RM initialization\n");
++                    recovering = 1;
+                     close(dev_fd);
+-                    if (init_rm() == 0 && find_edp() == edp) {
+-                        /* Reinitialization successful, retry the write */
+-                        set_luminance(edp, lum);
+-                        last_val = val;
+-                    } else {
+-                        /* Reinitialization failed, wait and let loop retry */
+-                        usleep(500000);
++                    close(ctl_fd);
++                    if (init_rm() == 0) {
++                        uint32_t found = find_edp();
++                        if (found) {
++                            edp = found;
++                            r = set_luminance(edp, lum);
++                        }
++                    }
++                    if (r != 0) {
++                        last_val = -1;
++                        usleep(1000000);
++                        continue;
+                     }
+-                } else {
+-                    last_val = val;
+                 }
++                if (recovering || refresh)
++                    fprintf(stderr, "nv-bright: restored luminance to %u mcd/m²\n", lum);
++                recovering = 0;
++                last_val = val;
+             }
+ 
+             struct pollfd pfd = { .fd = sysfs_fd, .events = POLLPRI | POLLERR };
+@@ -208,9 +295,8 @@ int main(int argc, char **argv)
      }
  
      /* Interactive mode — verbose output */
@@ -245,7 +391,7 @@ index 8e1c472..c2806b1 100644
  
      uint16_t cur_bright = (ctl[2] << 8) | ctl[3];
      int bklght_en = ctl[0] & 1;
-@@ -234,10 +268,21 @@ int main(int argc, char **argv)
+@@ -234,10 +320,21 @@ int main(int argc, char **argv)
      }
  
      if (strcmp(argv[1], "lum") == 0 && argc >= 3) {
@@ -269,7 +415,7 @@ index 8e1c472..c2806b1 100644
          uint32_t rb = get_luminance(edp);
          printf("Readback: %d mcd/m²\n", rb);
      } else if (strcmp(argv[1], "read") == 0 && argc >= 3) {
-@@ -250,13 +295,16 @@ int main(int argc, char **argv)
+@@ -250,13 +347,16 @@ int main(int argc, char **argv)
          uint32_t addr = strtoul(argv[2], NULL, 16);
          uint32_t count = argc - 3;
          uint8_t vals[16];
@@ -301,3 +447,125 @@ index b21cedd..27f244b 100644
  Restart=on-failure
  RestartSec=5
  
+diff --git a/nv-bright.spec b/nv-bright.spec
+index 255d95c..d1aca30 100644
+--- a/nv-bright.spec
++++ b/nv-bright.spec
+@@ -41,4 +41,5 @@ support PANEL_LUMINANCE_CONTROL_CAP.
+ %files
+ %{_bindir}/nv-bright
+ %{_bindir}/nv-bright-wrapper
++%{_bindir}/nv-bright-session
+ %{_unitdir}/nv-bright.service
+diff --git a/nv-bright-session b/nv-bright-session
+new file mode 100755
+index 0000000..b47847b
+--- /dev/null
++++ b/nv-bright-session
+@@ -0,0 +1,106 @@
++#!/usr/bin/python3
++"""Restore panel brightness after the local graphical session unlocks."""
++
++import os
++from pathlib import Path
++import signal
++import subprocess
++import sys
++
++import dbus
++from dbus.mainloop.glib import DBusGMainLoop
++from gi.repository import GLib, GLibUnix
++
++LOGIN = "org.freedesktop.login1"
++SESSION = LOGIN + ".Session"
++PROPERTIES = "org.freedesktop.DBus.Properties"
++
++
++def main():
++    DBusGMainLoop(set_as_default=True)
++    bus = dbus.SystemBus()
++    loop = GLib.MainLoop()
++    watcher = None
++    pending = {}
++    exit_code = 0
++
++    def session_ready(path):
++        try:
++            props = dbus.Interface(bus.get_object(LOGIN, path, introspect=False), PROPERTIES).GetAll(SESSION)
++        except dbus.DBusException as error:
++            print(f"nv-bright: cannot inspect unlocked session: {error}", file=sys.stderr, flush=True)
++            return False
++        return (
++            not props.get("LockedHint", True)
++            and props.get("Active", False)
++            and not props.get("Remote", True)
++            and props.get("Type") in ("wayland", "x11")
++            and props.get("Seat", (None,))[0] == "seat0"
++        )
++
++    def refresh(path):
++        pending.pop(path, None)
++        if watcher is not None and session_ready(path):
++            try:
++                os.kill(watcher.pid, signal.SIGUSR1)
++                print("nv-bright: local session unlocked, refreshing brightness", file=sys.stderr, flush=True)
++            except ProcessLookupError:
++                pass
++        return GLib.SOURCE_REMOVE
++
++    def changed(interface, properties, invalidated, path):
++        if "LockedHint" not in properties:
++            return
++        timer = pending.pop(path, None)
++        if timer is not None:
++            GLib.source_remove(timer)
++        if not properties["LockedHint"] and session_ready(path):
++            pending[path] = GLib.timeout_add(500, refresh, path)
++
++    def child_exited(pid, status):
++        nonlocal exit_code
++        watcher.returncode = os.waitstatus_to_exitcode(status)
++        exit_code = abs(watcher.returncode)
++        loop.quit()
++
++    def stop(user_data=None):
++        loop.quit()
++        return GLib.SOURCE_REMOVE
++
++    def disconnected(connection):
++        nonlocal exit_code
++        exit_code = 1
++        loop.quit()
++
++    bus.add_signal_receiver(
++        changed,
++        signal_name="PropertiesChanged",
++        dbus_interface=PROPERTIES,
++        bus_name=LOGIN,
++        arg0=SESSION,
++        path_keyword="path",
++    )
++    bus.call_on_disconnection(disconnected)
++    binary = Path(__file__).resolve().with_name("nv-bright")
++    watcher = subprocess.Popen([str(binary), "watch", *sys.argv[1:]])
++    GLib.child_watch_add(watcher.pid, child_exited)
++    GLibUnix.signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, stop, None)
++    GLibUnix.signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, stop, None)
++    print("nv-bright: listening for local graphical session unlocks", file=sys.stderr, flush=True)
++    try:
++        loop.run()
++    finally:
++        for timer in pending.values():
++            GLib.source_remove(timer)
++        if watcher.returncode is None:
++            watcher.terminate()
++            try:
++                watcher.wait(timeout=3)
++            except subprocess.TimeoutExpired:
++                watcher.kill()
++                watcher.wait()
++    return exit_code
++
++
++if __name__ == "__main__":
++    sys.exit(main())

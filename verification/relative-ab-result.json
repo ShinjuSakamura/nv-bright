@@ -25,8 +25,9 @@
     "service_restarted": true,
     "user_observation": "normal brightness returned"
   },
-  "result": "No visible improvement from changing only the high byte; the high-byte-alignment workaround hypothesis was not supported.",
+  "result": "No visible improvement from the single-byte high-register write. This trial did not test a complete two-byte write.",
   "supported_localization": "Brightness differs strongly between relative and absolute panel control paths.",
   "exact_vendor_culprit_proven": false,
-  "log": "relative-ab.log"
+  "log": "relative-ab.log",
+  "interpretation_limit": "Cannot conclusively rule out byte alignment or write-commit semantics; no panel latching specification was obtained."
 }

@@ -41,4 +41,5 @@ support PANEL_LUMINANCE_CONTROL_CAP.
 %files
 %{_bindir}/nv-bright
 %{_bindir}/nv-bright-wrapper
+%{_bindir}/nv-bright-session
 %{_unitdir}/nv-bright.service

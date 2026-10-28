@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # IAX11 range verified by the 250 cd/m² hardware trial.
 MIN_NITS=5
-MAX_NITS=250
+MAX_NITS=350
 
 echo "Starting nv-bright watch mode: $MIN_NITS to $MAX_NITS cd/m²"
 
-# Exec replaces the bash process with the nv-bright daemon, so systemd tracks it properly
-exec "$SCRIPT_DIR/nv-bright" watch "$MIN_NITS" "$MAX_NITS"
+# The session listener owns the brightness process and forwards service shutdown.
+exec "$SCRIPT_DIR/nv-bright-session" "$MIN_NITS" "$MAX_NITS"

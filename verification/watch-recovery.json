@@ -1,0 +1,71 @@
+{
+  "entrypoint": "nv-bright-wrapper -> nv-bright-session -> nv-bright watch 5 350",
+  "transport": "private dbus-daemon with actual login1-shaped PropertiesChanged signals; memory-only NVIDIA RM/AUX and sysfs simulation",
+  "idle_periodic_panel_queries": 0,
+  "idle_periodic_session_queries": 0,
+  "unlock_delay_ms": 500,
+  "results": [
+    {
+      "scenario": "wrapper-startup",
+      "passed": true,
+      "seconds": 0.05
+    },
+    {
+      "scenario": "zero-idle-panel-or-session-queries",
+      "passed": true,
+      "seconds": 2.2
+    },
+    {
+      "scenario": "lock-does-not-restore",
+      "passed": true,
+      "seconds": 1.2
+    },
+    {
+      "scenario": "unlock-restores-once-after-500ms",
+      "passed": true,
+      "seconds": 1.83
+    },
+    {
+      "scenario": "remote-inactive-tty-other-seat-ignored",
+      "passed": true,
+      "seconds": 0.81
+    },
+    {
+      "scenario": "relock-cancels-pending-restoration",
+      "passed": true,
+      "seconds": 0.96
+    },
+    {
+      "scenario": "duplicate-notifications-coalesced",
+      "passed": true,
+      "seconds": 0.63
+    },
+    {
+      "scenario": "failed-writes-retry-until-readback-success",
+      "passed": true,
+      "seconds": 2.78
+    },
+    {
+      "scenario": "off-display-waits-for-power-on",
+      "passed": true,
+      "seconds": 1.07
+    },
+    {
+      "scenario": "brightness-key-mapping-and-mode-bits",
+      "passed": true,
+      "seconds": 0.63
+    },
+    {
+      "scenario": "service-stop-cleans-up-brightness-process",
+      "passed": true,
+      "seconds": 0.02
+    }
+  ],
+  "hardware_idle_unlock_verified": false,
+  "system_service": {
+    "ActiveState": "active",
+    "MainPID": "78751",
+    "ExecMainStartTimestamp": "Wed 2026-10-28 02:33:05 PDT",
+    "unlock_listener_started": true
+  }
+}
